@@ -87,11 +87,11 @@ return bestfit
         also_idxs = test_idxs[test_err < t] # select indices of rows with accepted points
         alsoinliers = data[also_idxs,:]
         if debug:
-            print 'test_err.min()',test_err.min()
-            print 'test_err.max()',test_err.max()
-            print 'numpy.mean(test_err)',numpy.mean(test_err)
-            print 'iteration %d:len(alsoinliers) = %d'%(
-                iterations,len(alsoinliers))
+            print(('test_err.min()',test_err.min()))
+            print(('test_err.max()',test_err.max()))
+            print(('numpy.mean(test_err)',numpy.mean(test_err)))
+            print(('iteration %d:len(alsoinliers) = %d'%(
+                iterations,len(alsoinliers))))
         if len(alsoinliers) > d:
             betterdata = numpy.concatenate( (maybeinliers, alsoinliers) )
             bettermodel = model.fit(betterdata)
@@ -106,7 +106,7 @@ return bestfit
     if bestfit is None:
         print("no RANSAC fit found")
         return None
-    print('ransac.py: best avg inlier error was:  '+str(besterr))
+    print(('ransac.py: best avg inlier error was:  '+str(besterr)))
     if return_all:
         return bestfit, {'inliers':best_inlier_idxs}
     else:

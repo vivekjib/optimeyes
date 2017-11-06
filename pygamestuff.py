@@ -12,7 +12,7 @@ import sys, pygame
 from pygame.locals import *
 
 pygame.init()
-size = width, height = 1700, 700
+size = width, height = 1366, 768
 white = 255, 255, 255
 screen = pygame.display.set_mode(size)
 
@@ -68,7 +68,7 @@ class Crosshair(object):
     def write(self):
         fo = open("1700wxoffsetyoffsetxy.csv", "w")
         for line in self.result:
-            print line
+            print(line)
             result = ""
             for number in line:
                 result += str(number) + str(',')

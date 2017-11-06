@@ -161,7 +161,7 @@ def getPupilCenter(gray, getRawProbabilityImage=False):
 ##    #original method
 ##    centers = np.array([[phi(cx,cy,gradDX,gradDY,gradXcoords,gradYcoords) if isDark[cy][cx] else 0 for cx in range(dxn.shape[1])] for cy in range(dxn.shape[0])])
     #histogram method
-    centers = np.array([[phiWithHist(cx,cy,gradDX,gradDY,gradXcoords,gradYcoords, IRIS_RADIUS) if isDark[cy][cx] else 0 for cx in xrange(minXForPupil,dxn.shape[1])] for cy in xrange(dxn.shape[0])]).astype('float32')
+    centers = np.array([[phiWithHist(cx,cy,gradDX,gradDY,gradXcoords,gradYcoords, IRIS_RADIUS) if isDark[cy][cx] else 0 for cx in range(minXForPupil,dxn.shape[1])] for cy in range(dxn.shape[0])]).astype('float32')
     # display outputs for debugging
 ##    centers = np.array([[phiTest(cx,cy,gradDX,gradDY,gradXcoords,gradYcoords) for cx in range(dxn.shape[1])] for cy in range(dxn.shape[0])])
 ##    debugImg(centers)
@@ -227,7 +227,7 @@ def getEyeCorner(gray):
     endPrior = [0,0]
     startNew = [0,0]
     endNew = [0,0]
-    for i in xrange(2):
+    for i in range(2):
         diff = lastCornerProb.shape[i]-centers.shape[i]
         if diff >= 0: # new is smaller
             startPrior[i] = int(diff/2)
@@ -274,7 +274,7 @@ def phiWithHist(cx,cy,gradDX,gradDY,gradXcoords,gradYcoords, IRIS_RADIUS):
     # bin the distances between 1 and IRIS_RADIUS. We'll discard all others.
     binWidth = 1 #TODO: account for webcam resolution. Also, maybe have it transform ellipses to circles when on the sides? (hard)
     numBins =  int(np.ceil((IRIS_RADIUS-1)/binWidth))
-    bins = [(1+binWidth*index)**2 for index in xrange(numBins+1)] #express bin edges in terms of length squared
+    bins = [(1+binWidth*index)**2 for index in range(numBins+1)] #express bin edges in terms of length squared
     hist = np.histogram(lengthsSquared, bins)[0]
     maxBin = hist.argmax()
     slop = binWidth
@@ -342,10 +342,10 @@ def phiTest(cx,cy,gradDX,gradDY,gradXcoords,gradYcoords):
 # defaultPriorValue - if not all of newProb is covered by priorToMultiply, this scalar goes in the uncovered areas.
 def multiplyProbImages(newProb, priorToMultiply, YXoffsetOfSecondWithinFirst, defaultPriorValue):
     if np.any(YXoffsetOfSecondWithinFirst > newProb.shape) or np.any(-YXoffsetOfSecondWithinFirst > priorToMultiply.shape):
-        print "multiplyProbImages aborting - zero overlap. Offset and matrices:"
-        print YXoffsetOfSecondWithinFirst
-        print newProb.shape
-        print priorToMultiply.shape
+        print("multiplyProbImages aborting - zero overlap. Offset and matrices:")
+        print(YXoffsetOfSecondWithinFirst)
+        print((newProb.shape))
+        print((priorToMultiply.shape))
         return newProb*defaultPriorValue
     prior = np.ones(newProb.shape)*defaultPriorValue # Most of this will get overwritten. For areas that won't be, with fill with default value.
     #offsets
@@ -353,12 +353,12 @@ def multiplyProbImages(newProb, priorToMultiply, YXoffsetOfSecondWithinFirst, de
     endPrior = [0,0]
     startNew = [0,0]
     endNew = [0,0]
-    for i in xrange(2):
+    for i in range(2):
         #offset=0
         # NOT THIS: x[1:2][1:2]
         # THIS: x[1:2,1:2]
         offset = int(round(YXoffsetOfSecondWithinFirst[i])) # how much to offset 'prior' within 'newProb', for the current dimension
-        print offset
+        print(offset)
         if offset >= 0: # prior goes right of 'newProb', in the world. So prior will be copied into newProb at a positive offset
             startPrior[i] = 0 #index within prior
             endPrior[i] = min(priorToMultiply.shape[i],newProb.shape[i]-offset) #how much of prior to copy
@@ -381,7 +381,7 @@ def multiplyProbImages(newProb, priorToMultiply, YXoffsetOfSecondWithinFirst, de
 ## returns a numpy ndarray where rects[0] is the first detection, and holds [minX, minY, maxX, maxY] where +Y = downward
 def detect(img, cascade, minimumFeatureSize=(20,20)):
     if cascade.empty():
-        raise(Exception("There was a problem loading your Haar Cascade xml file."))
+        raise Exception
     rects = cascade.detectMultiScale(img, scaleFactor=1.3, minNeighbors=1, minSize=minimumFeatureSize)
     if len(rects) == 0:
         return []
@@ -412,6 +412,7 @@ nOctaveLayers = 2
 extended = True
 upright = True
 detector = cv2.xfeatures2d.SURF_create(hessianThreshold, nOctaves, nOctaveLayers, extended, upright)
+#detector = cv2.ORB_create()
 #figure out a way to nearest neighbor map to index
 virtualpoint = None
 warm=0
@@ -420,7 +421,7 @@ warm=0
 # INPUTS:
 # frame - a color numpy image.
 # allowDebugDisplay - pass True if you want it to draw pupil centers, etc on "frame" and then display it.
-# Display requires that you called this line to create the window: previewWindow = cv2.namedWindow(WINDOW_NAME)
+# Display requires that you called this line to create the window: previewWindow = cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_KEEPRATIO)
 # trackAverageOffset - output will be a moving average rather than instantaneous value
 # directInferenceLeftRight - combines probability images from left and right to hopefully reduce noise in estimation of pupil offset
 # Returns a list of two tuples of pupil offsets from the forehead dot. Specifically:
@@ -466,7 +467,7 @@ def getOffset(frame, allowDebugDisplay=True, trackAverageOffset=True, directInfe
                 pupilCenterEstimates.append(centerProb.copy())
             else:
                 (cy,cx) = getPupilCenter(eyeImg, True)
-            pupilXYList.append( (cx+eye[0],cy+eye[1])  )
+            pupilXYList.append( (int(cx+eye[0]), int(cy+eye[1]))  )
             if allowDebugDisplay:
                 cv2.rectangle(output, (eye[0], eye[1]), (eye[2], eye[3]), (0,255,0), 1)
                 cv2.circle(output, pupilXYList[eyeIndex], 3, (255,0,0),thickness=1) #BGR format
@@ -535,7 +536,7 @@ def getOffset(frame, allowDebugDisplay=True, trackAverageOffset=True, directInfe
                         betweenEyes = (np.array(featureCenterXY(leftEye_rightEye[0]))+np.array(featureCenterXY(leftEye_rightEye[1])))/2
                         virtualpoint = ClassyVirtualReferencePoint.ClassyVirtualReferencePoint(haystackKeypoints, haystackDescriptors, (betweenEyes[0], betweenEyes[1]), face, leftEye_rightEye[0], leftEye_rightEye[1])
                     else:
-                        print "begin fail"
+                        print("begin fail")
                 else: #we've already created it
                     keypoints, descriptors = detector.detectAndCompute(gray, mask=None)
                     if drawKeypoints:
@@ -546,7 +547,7 @@ def getOffset(frame, allowDebugDisplay=True, trackAverageOffset=True, directInfe
                         refXY  = virtualpoint.getReferencePoint(keypoints, descriptors, face, leftEye_rightEye[0], leftEye_rightEye[1], imgToDrawOn)
             # end of Adam's reference point code
 
-        for i in xrange(len(pupilXYList)):
+        for i in range(len(pupilXYList)):
             pupilXYList[i] = ( pupilXYList[i][0]-refXY[0], pupilXYList[i][1]-refXY[1])
         pupilXYList = list(pupilXYList[0])+ list(pupilXYList[1]) #concatenate cam-left and cam-right coordinate tuples to make a single length 4 vector [x,y,x,y]
 
@@ -626,7 +627,7 @@ def RANSACFitTransformation(OffsetsAndPixels):
     numInputCols = OffsetsAndPixels.shape[1]-2
     data = np.concatenate( (OffsetsAndPixels[:,0:numInputCols], OffsetsAndPixels[:,numInputCols:] ) , axis=1)
 
-    model = LinearLeastSquaresModel(range(numInputCols), (numInputCols,numInputCols+1))
+    model = LinearLeastSquaresModel(list(range(numInputCols)), (numInputCols,numInputCols+1))
     minSeedSize = 5
     iterations = 800
     maxInlierError = 240 #**2
@@ -647,7 +648,7 @@ def main():
         if vc.isOpened(): # try to get the first frame
             (readSuccessful, frame) = vc.read()
         else:
-            raise(Exception("failed to open camera."))
+            raise Exception
             readSuccessful = False
     
         while readSuccessful:
@@ -669,7 +670,7 @@ def mainForTraining():
     if vc.isOpened(): # try to get the first frame
         (readSuccessful, frame) = vc.read()
     else:
-        raise(Exception("failed to open camera."))
+        raise Exception
         return
 
     MAX_SAMPLES_TO_RECORD = 999999
@@ -684,7 +685,7 @@ def mainForTraining():
                     #print( (xOffset,yOffset) )
                     #do learning here, to relate xOffset and yOffset to screenX,screenY
                     crosshair.record(pupilOffsetXYList)
-                    print "recorded something"
+                    print("recorded something")
                     crosshair.remove()
                     recordedEvents += 1
                     if recordedEvents > RANSAC_MIN_INLIERS:
@@ -693,23 +694,23 @@ def mainForTraining():
                         features = getFeatures(resultXYpxpy[:,:-2])
                         featuresAndLabels = np.concatenate( (features, resultXYpxpy[:,-2:] ) , axis=1)
                         HT = RANSACFitTransformation(featuresAndLabels)
-                        print HT
+                        print(HT)
                 if HT is not None: # draw predicted eye position
                     currentFeatures =getFeatures( np.array( (pupilOffsetXYList[0], pupilOffsetXYList[1]) ))
                     gazeCoords = currentFeatures.dot(HT)
                     crosshair.drawCrossAt( (gazeCoords[0,0], gazeCoords[0,1]) )
             readSuccessful, frame = vc.read()
     
-        print "writing"
+        print("writing")
         crosshair.write() #writes data to a csv for MATLAB
         crosshair.close()
-        print "HT:\n"
-        print HT
+        print("HT:\n")
+        print(HT)
         resultXYpxpy =np.array(crosshair.result)
-        print "eyeData:\n"
-        print getFeatures(resultXYpxpy[:,:-2])
-        print "resultXYpxpy:\n"
-        print resultXYpxpy[:,-2:]
+        print("eyeData:\n")
+        print((getFeatures(resultXYpxpy[:,:-2])))
+        print("resultXYpxpy:\n")
+        print((resultXYpxpy[:,-2:]))
     finally:
         vc.release() #close the camera
     

@@ -10,7 +10,7 @@ WINDOW_NAME = "preview"
 
 def detect(img, cascade, minimumFeatureSize=(20,20)):
     if cascade.empty():
-        raise(Exception("There was a problem loading your Haar Cascade xml file."))
+        raise Exception
     #cv2.CascadeClassifier.detectMultiScale(image, rejectLevels, levelWeights[, scaleFactor[, minNeighbors[, flags[, minSize[, maxSize[, outputRejectLevels]]]]]]) -> objects
     rects = cascade.detectMultiScale(img, scaleFactor=1.2, minNeighbors=3, minSize=minimumFeatureSize)
     if len(rects) == 0:
@@ -38,7 +38,7 @@ def main():
     if vc.isOpened(): # try to get the first frame
         (readSuccessful, frame) = vc.read()
     else:
-        print "Could not open the system camera. Is another instance already running?"
+        print("Could not open the system camera. Is another instance already running?")
         readSuccessful = False
 
     while readSuccessful:
