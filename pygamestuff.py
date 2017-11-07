@@ -1,13 +1,3 @@
-#-------------------------------------------------------------------------------
-# Name:        module1
-# Purpose:
-#
-# Author:      lukea_000
-#
-# Created:     02/11/2013
-# Copyright:   (c) lukea_000 2013
-# Licence:     <your licence>
-#-------------------------------------------------------------------------------
 import sys, pygame
 from pygame.locals import *
 
@@ -20,12 +10,8 @@ class Crosshair(object):
     def __init__(self, speed = [1, 1], quadratic = True):
         self.quadratic = quadratic
         self.speed = speed
-        self.cross = pygame.image.load('gaussianBlur.png')#pygame.image.load('bmpcrosshair.bmp')
+        self.cross = pygame.image.load('gaussianBlur.png')
         self.crossrect = self.cross.get_rect()
-##        print self.crossrect.center, "is the center"
-##        print self.crossrect, "is the rect"
-##        print self.crossrect.top, "is the top"
-##        print self.crossrect.left, "is the left"
         self.result = []
         self.delay = 20
         self.userWantsToQuit = False
@@ -66,7 +52,7 @@ class Crosshair(object):
         self.result.append(list(inputTuple)+[self.crossrect.centerx,self.crossrect.centery])
 
     def write(self):
-        fo = open("1700wxoffsetyoffsetxy.csv", "w")
+        fo = open("1700wxoffsetyoffsetxy.csv", "a")
         for line in self.result:
             print(line)
             result = ""
@@ -117,28 +103,5 @@ class Crosshair(object):
 
     def close(self):
         pygame.display.quit()
-
-
-##ch = Crosshair()
-##for i in range(10):
-##    pygame.time.delay(100)
-##    ch.getClick()
-
-
-#while 1:
-#    pressed = pygame.mouse.get_pressed()
-#    if any(pressed):
-#        break
-#    for event in pygame.event.get():
-#        if event.type in (QUIT, pygame.KEYDOWN):
-#            break
-
-#    crosshair.draw()
-#    pygame.time.delay(10)#miliseconds
-#    xoffset = 0
-#    yoffset = 0
-#    crosshair.record(xoffset, yoffset)
-#    crosshair.move()
-
 
 

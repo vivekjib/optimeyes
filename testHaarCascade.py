@@ -32,7 +32,7 @@ def handleFrame(frame, allowDebugDisplay=True):
         cv2.imshow(WINDOW_NAME, cv2.resize(output,(0,0), fx=2,fy=2,interpolation=cv2.INTER_NEAREST) )
 
 def main():
-    previewWindow = cv2.namedWindow(WINDOW_NAME) # open a window to show debugging images
+    previewWindow = cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_KEEPRATIO) # open a window to show debugging images
 
     vc = cv2.VideoCapture(0) # Initialize the default camera
     if vc.isOpened(): # try to get the first frame

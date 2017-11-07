@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import ClassyVirtualReferencePoint as ClassyVirtualReferencePoint
 import ransac
+import pyautogui
 
 # set doTraining = False to display debug graphics:
 # You should do this first. There should be a green line from your
@@ -9,18 +10,15 @@ import ransac
 # circles should generally track your pupils, though less reliably than the green line.
 # If performance is bad, you can tweak the "TUNABLE PARAMETER" lines. (This is a big
 # area where improvement is needed; probably some learning of parameters.)
-# Set True to run the main program:
+# 
+# Set "True" to run the "main" program:
 # You click where you're looking, and, after around 10-20 such clicks,
 # the program will learn the correspondence and start drawing a blue blur
 # where you look. It's important to keep your head still (in position AND angle)
 # or it won't work.
-doTraining = False
 
 
-
-
-
-
+doTraining = True
 
 def featureCenter(f):
     return (.5*(f.mExtents[0]+f.mExtents[1]),.5*(f.mExtents[2]+f.mExtents[3]) )
@@ -107,26 +105,17 @@ dilationHeight = 1+2*BLOWUP_FACTOR #must be an odd number
 dilationKernel = np.ones((dilationHeight,dilationWidth),'uint8')
 
 
-
-
-
 writeEyeDebugImages = False #enable to export image files showing pupil center probability
 eyeCounter = 0
 
 # Returns (cy,cx) of the pupil center, where y is down and x is right. You should pass in a grayscale Cv2 image which
 # is closely cropped around the center of the eye (using the Haar cascade eye detector)
 def getPupilCenter(gray, getRawProbabilityImage=False):
-##    (scleraY, scleraX) = np.unravel_index(gray.argmax(),gray.shape)
-##    scleraColor = colors[scleraY,scleraX,:]
-##    img[scleraX,scleraY] = (255,0,0)
-##    img.colorDistance(skinColor[:]).save(disp)
-##    img.edges().save(disp)
-##    print skinColor, scleraColor
     gray = gray.astype('float32')
     if BLOWUP_FACTOR != 1:
         gray = cv2.resize(gray, (0,0), fx=BLOWUP_FACTOR, fy=BLOWUP_FACTOR, interpolation=cv2.INTER_LINEAR)
 
-    IRIS_RADIUS = gray.shape[0]*.75/2 #conservative-large estimate of iris radius TODO: make this a tracked parameter--pass a prior-probability of radius based on last few iris detections. TUNABLE PARAMETER
+    IRIS_RADIUS = gray.shape[0]*.75/2 #conservative-large estimate of iris radius TO DO: make this a tracked parameter--pass a prior-probability of radius based on last few iris detections. TUNABLE PARAMETER
     #debugImg(gray)
     dxn = cv2.Sobel(gray,cv2.CV_32F,1,0,ksize=3) #optimization opportunity: blur the image once, then just subtract 2 pixels in x and 2 in y. Should be equivalent.
     dyn = cv2.Sobel(gray,cv2.CV_32F,0,1,ksize=3)
@@ -134,8 +123,8 @@ def getPupilCenter(gray, getRawProbabilityImage=False):
 
     # ########### Pupil finding
     magThreshold = magnitudeSquared.mean()*.6 #only retain high-magnitude gradients. <-- VITAL TUNABLE PARAMETER
-                    # The value of this threshold is critical for good performance.
-                    # todo: adjust this threshold using more images. Maybe should train our tuned parameters.
+    # The value of this threshold is critical for good performance.
+    # TO DO: adjust this threshold using more images. Maybe should train our tuned parameters.
     # form a bool array, unrolled columnwise, which can index into the image.
     # we will only use gradients whose magnitude is above the threshold, and
     # (optionally) where the gradient direction meets characteristics such as being more horizontal than vertical.
@@ -143,18 +132,9 @@ def getPupilCenter(gray, getRawProbabilityImage=False):
     lengths = np.sqrt(magnitudeSquared[gradsTouse]) #this converts us to double format
     gradDX = np.divide(dxn[gradsTouse],lengths) #unrolled columnwise
     gradDY = np.divide(dyn[gradsTouse],lengths)
-##    debugImg(gradsTouse*255)
-##    ksize = 7 #kernel size = x width and y height of the filter
-##    sigma = 4
-##    blurredGray = cv2.GaussianBlur(gray, (ksize,ksize), sigma, borderType=cv2.BORDER_REPLICATE)
-##    debugImg(gray)
-##    blurredGray = cv2.blur(gray, (ksize,ksize)) #x width and y height. TODO: try alternately growing and eroding black instead of blurring?
-    #isDark = blurredGray < blurredGray.mean()
     isDark = gray< (gray.mean()*.8)  #<-- TUNABLE PARAMETER
     global dilationKernel
     isDark = cv2.dilate(isDark.astype('uint8'), dilationKernel) #dilate so reflection goes dark too
-##    isDark = cv2.erode(isDark.astype('uint8'), dilationKernel)
-##    debugImg(isDark*255)
     gradXcoords =np.tile( np.arange(dxn.shape[1]), [dxn.shape[0], 1])[gradsTouse] # build arrays holding the original x,y position of each gradient in the list.
     gradYcoords =np.tile( np.arange(dxn.shape[0]), [dxn.shape[1], 1]).T[gradsTouse] # These lines are probably an optimization target for later.
     minXForPupil = 0 #int(dxn.shape[1]*.3)
@@ -185,7 +165,7 @@ def getPupilCenter(gray, getRawProbabilityImage=False):
 
 lastCornerProb = np.ones([1,1])
 
-#This was a failed attempt to find eye corners, not used in final version.
+# This was a failed attempt to find eye corners, not used in final version.
 # Returns (cy,cx) of the eye corner, where y is down and x is right. You should pass in a grayscale Cv2 image which
 # is closely cropped around the corner of the eye (using the Haar cascade eye detector)
 def getEyeCorner(gray):
@@ -204,9 +184,9 @@ def getEyeCorner(gray):
     dyn = cv2.Sobel(gray,cv2.CV_32F,0,1,ksize=3)
     magnitudeSquared = np.square(dxn)+np.square(dyn)
 ##    debugImg(np.sqrt(magnitudeSquared))
-    # ########### Eye corner finding. TODO: limit gradients to search area
+    # ########### Eye corner finding. TO DO: limit gradients to search area
     rangeOfXForCorner = int(dxn.shape[1]/2)
-    magThreshold = magnitudeSquared.mean()*.5 #only retain high-magnitude gradients. todo: adjust this threshold using more images. Maybe should train our tuned parameters.
+    magThreshold = magnitudeSquared.mean()*.5 #only retain high-magnitude gradients. TO DO: adjust this threshold using more images. Maybe should train our tuned parameters.
     # form a bool array, unrolled columnwise, which can index into the image.
     # we will only use gradients whose magnitude is above the threshold, and
     # (optionally) where the gradient direction meets characteristics such as being more horizontal than vertical.
@@ -216,9 +196,7 @@ def getEyeCorner(gray):
     gradDY = np.divide(dyn[gradsTouse],lengths)
     gradXcoords =np.tile( np.arange(dxn.shape[1]), [dxn.shape[0], 1])[gradsTouse] # build arrays holding the original x,y position of each gradient in the list.
     gradYcoords =np.tile( np.arange(dxn.shape[0]), [dxn.shape[1], 1]).T[gradsTouse] # These lines are probably an optimization target for later.
-##    debugImgOfVectors(gradDY,gradXcoords,gradYcoords, dxn.shape)
     centers = np.array([[phiCorner(cx,cy,gradDX,gradDY,gradXcoords,gradYcoords) for cx in range(rangeOfXForCorner)] for cy in range(dxn.shape[0])])
-##    debugImg(centers)
     # Tracking -- use prior beliefs about corner position
     global lastCornerProb
     weightOnNew = 1
@@ -272,7 +250,7 @@ def phiWithHist(cx,cy,gradDX,gradDY,gradXcoords,gradYcoords, IRIS_RADIUS):
     vecy = gradYcoords-cy
     lengthsSquared = np.square(vecx)+np.square(vecy)
     # bin the distances between 1 and IRIS_RADIUS. We'll discard all others.
-    binWidth = 1 #TODO: account for webcam resolution. Also, maybe have it transform ellipses to circles when on the sides? (hard)
+    binWidth = 1 #TO DO: account for webcam resolution. Also, maybe have it transform ellipses to circles when on the sides? (hard)
     numBins =  int(np.ceil((IRIS_RADIUS-1)/binWidth))
     bins = [(1+binWidth*index)**2 for index in range(numBins+1)] #express bin edges in terms of length squared
     hist = np.histogram(lengthsSquared, bins)[0]
@@ -302,10 +280,6 @@ def phiCorner(cx,cy,gradDX,gradDY,gradXcoords,gradYcoords):
     lengthsSquared = np.square(vecx)+np.square(vecy)
     valid = (lengthsSquared > 0) & (lengthsSquared < RELEVANT_DIST_FOR_CORNER_GRADIENTS) & (vecx>0.4)#RIGHT EYE ASSUMPTION
     numBins = 10
-##    binWidth = 2.0/numBins
-##    slop = binWidth/2
-##    bins = [binWidth*i for i in xrange(numBins+1)]
-##    hist = np.histogram(gradDY[valid], bins)[0]
     (hist,bins) = np.histogram(angles, numBins, (-math.pi,math.pi))
     slop = math.pi/numBins/2
     maxBin = hist.argmax()
@@ -354,9 +328,6 @@ def multiplyProbImages(newProb, priorToMultiply, YXoffsetOfSecondWithinFirst, de
     startNew = [0,0]
     endNew = [0,0]
     for i in range(2):
-        #offset=0
-        # NOT THIS: x[1:2][1:2]
-        # THIS: x[1:2,1:2]
         offset = int(round(YXoffsetOfSecondWithinFirst[i])) # how much to offset 'prior' within 'newProb', for the current dimension
         print(offset)
         if offset >= 0: # prior goes right of 'newProb', in the world. So prior will be copied into newProb at a positive offset
@@ -370,7 +341,6 @@ def multiplyProbImages(newProb, priorToMultiply, YXoffsetOfSecondWithinFirst, de
             startNew[i]=0
             endNew[i]=endPrior[i]-startPrior[i]
     prior[startNew[0]:endNew[0],startNew[1]:endNew[1]] = priorToMultiply[startPrior[0]:endPrior[0],startPrior[1]:endPrior[1]]
-    #prior[1:10,1:10] = priorToMultiply[1:10,1:10]
     #now, prior holds the portion of priorToMultiply which overlapped newProb.
     return newProb * prior
 
@@ -445,7 +415,6 @@ def getOffset(frame, allowDebugDisplay=True, trackAverageOffset=True, directInfe
 ##        draw_rects(output,eyes,(255,0,0))
     leftEye_rightEye = getLeftAndRightEyes( faces, eyes)
     if leftEye_rightEye: #if we found valid eyes in a face
-##            draw_rects(output,leftEye_rightEye,(0,0,255)) #BGR format
         xDistBetweenEyes = (leftEye_rightEye[0][0]+leftEye_rightEye[0][1]+leftEye_rightEye[1][0]+leftEye_rightEye[1][1])/4 #for debugging reference point
         pupilXYList = []
         pupilCenterEstimates = []
@@ -472,18 +441,6 @@ def getOffset(frame, allowDebugDisplay=True, trackAverageOffset=True, directInfe
                 cv2.rectangle(output, (eye[0], eye[1]), (eye[2], eye[3]), (0,255,0), 1)
                 cv2.circle(output, pupilXYList[eyeIndex], 3, (255,0,0),thickness=1) #BGR format
 
-
-        # tear-duct of the camera-right eye
-##        corner[0] += eyeWidth*0
-##        corner[2] -= eyeWidth*.6
-##        corner[1] += eyeHeight*.4
-##        corner[3] -= eyeHeight*.35
-##        corner = np.round(corner)
-##        cv2.rectangle(output, (corner[0], corner[1]), (corner[2], corner[3]), (0,0,0), 1)
-##        cornerImg = gray[corner[1]:corner[3], corner[0]:corner[2]]
-##        (cornerCy,cornerCx) = getEyeCorner(cornerImg)
-##        cv2.circle(output, (cornerCx+corner[0],cornerCy+corner[1]), 2, (255,255,0),thickness=1) #BGR format
-
         # direct inference combination of the two eye probability images.
         global PupilSpacingRunningAvg
         if directInferenceLeftRight:
@@ -505,9 +462,6 @@ def getOffset(frame, allowDebugDisplay=True, trackAverageOffset=True, directInfe
             jointPupilProb = multiplyProbImages(pupilCenterEstimates[1], pupilCenterEstimates[0], positionOfZeroWithinOne[::-1], 0) # the [::-1] reverse the order, so it's YX instead of the XY that these vectors are in
 ##            debugImg(jointPupilProb)
             maxInd = jointPupilProb.argmax()
-##            cv2.imwrite( "eye0.png", pupilCenterEstimates[0]/pupilCenterEstimates[0].max()*255) #write probability images for our report
-##            cv2.imwrite( "eye1.png", pupilCenterEstimates[1]/pupilCenterEstimates[1].max()*255)
-##            cv2.imwrite( "eyeJoint.png", jointPupilProb/jointPupilProb.max()*255)
             (pupilCy,pupilCx) = np.unravel_index(maxInd, jointPupilProb.shape) # coordinates in the eye 1 (camera-right eye) image
             pupilXYList[0]=pupilXYList[1]=(pupilCx + leftEye_rightEye[1][0],pupilCy + leftEye_rightEye[1][1]) #convert to absolute image coordinates
 
@@ -521,12 +475,11 @@ def getOffset(frame, allowDebugDisplay=True, trackAverageOffset=True, directInfe
             if allowDebugDisplay:
                 cv2.rectangle(output, (dotSearchBox[0], dotSearchBox[1]), (dotSearchBox[2], dotSearchBox[3]), (128,0,128), 1)
                 cv2.circle(output, refXY, 2, (0,0,100),thickness=1) #BGR format
-        else: # Adam's virtual reference point code. See paper for how it works.
+        else:
             refXY = (0,0)
             global warm, virtualpoint
             warm += 1
             if warm > 8:
-                #adam
                 face = faces[0]#expect the first one
                 faceImg = gray[face[1]:face[3], face[0]:face[2]]
                 cornerImg = gray[corner[1]:corner[3], corner[0]:corner[2]]
@@ -545,7 +498,6 @@ def getOffset(frame, allowDebugDisplay=True, trackAverageOffset=True, directInfe
                         imgToDrawOn = None
                     if len(descriptors) != 0:
                         refXY  = virtualpoint.getReferencePoint(keypoints, descriptors, face, leftEye_rightEye[0], leftEye_rightEye[1], imgToDrawOn)
-            # end of Adam's reference point code
 
         for i in range(len(pupilXYList)):
             pupilXYList[i] = ( pupilXYList[i][0]-refXY[0], pupilXYList[i][1]-refXY[1])
@@ -588,10 +540,6 @@ class LinearLeastSquaresModel:
         self.output_columns = output_columns
         self.debug = debug
     def fit(self, data):
-##        A = numpy.vstack([data[:,i] for i in self.input_columns]).T
-##        B = numpy.vstack([data[:,i] for i in self.output_columns]).T
-##        x,resids,rank,s = scipy.linalg.lstsq(A,B)
-##        return x
         HT = np.linalg.lstsq(data[:,self.input_columns], data[:,self.output_columns])[0] # returns a tuple, where index 0 is the solution matrix.
         return HT
 
@@ -640,7 +588,7 @@ def fitTransformation(OffsetsAndPixels):
     HT = np.linalg.lstsq(offsets, pixels)[0] # returns a tuple, where index 0 is the solution matrix.
     return HT
 
-WINDOW_NAME = "preview"
+WINDOW_NAME = "Preview"
 def main():
     cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_KEEPRATIO) # open a window to show debugging images
     vc = cv2.VideoCapture(0) # Initialize the default camera
@@ -698,6 +646,7 @@ def mainForTraining():
                 if HT is not None: # draw predicted eye position
                     currentFeatures =getFeatures( np.array( (pupilOffsetXYList[0], pupilOffsetXYList[1]) ))
                     gazeCoords = currentFeatures.dot(HT)
+                    #pyautogui.moveTo(gazeCoords)
                     crosshair.drawCrossAt( (gazeCoords[0,0], gazeCoords[0,1]) )
             readSuccessful, frame = vc.read()
     

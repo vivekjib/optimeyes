@@ -1,14 +1,3 @@
-#-------------------------------------------------------------------------------
-# Name:        module1
-# Purpose:
-#
-# Author:      lukea_000
-#
-# Created:     11/12/2013
-# Copyright:   (c) lukea_000 2013
-# Licence:     <your licence>
-#-------------------------------------------------------------------------------
-
 import numpy as np
 import cv2
 from eyeDetect import *
@@ -86,11 +75,9 @@ class ClassyVirtualReferencePoint(object):
         #zero out the others if your way of setting weights changes
         for i, kp in enumerate(self.keypointdata):
             self.keypointdata[i].found = 0
-        #return this
         return self.reference
 
     def cropToBounds(self, kps, des, bounds, eye1, eye2):
-#        des = np.array(des, dtype = np.float32).reshape((-1, self.rowsize))
         keypoints, descriptors = [], []
         for i, kp in enumerate(kps):
             if containsPoint(bounds, kp.pt): #point is in the face
@@ -98,7 +85,6 @@ class ClassyVirtualReferencePoint(object):
                 #point is outside both eyes
                     keypoints.append(kp)
                     descriptors.append(des[i])
-#        return (keypoints, np.array(descriptors, dtype = np.float32).reshape((-1, self.rowsize)))
         return (keypoints,np.array(descriptors))
 
     def getReferencePoint(self, keypoints, descriptors, bounds, eye1, eye2, img = None):
@@ -137,7 +123,7 @@ class ClassyVirtualReferencePoint(object):
                         self.keypointdata[oldlabel].guess = keypoints[i].pt[0] + self.keypointdata[oldlabel].vector[0], \
                                                  keypoints[i].pt[1] + self.keypointdata[oldlabel].vector[1]
                         #if there's an image, draw on it
-                        if img.all() != None:
+                        if img != None:
                             cx, cy = keypoints[i].pt#this is different from my other code but I think it's good
                             cx, cy = int(cx), int(cy)
                             cv2.putText(img, str(oldlabel), (cx, cy), cv2.FONT_HERSHEY_SIMPLEX, .25, (100, 170, 0))
@@ -147,7 +133,7 @@ class ClassyVirtualReferencePoint(object):
                 kp.weight = 0
         if max([kp.weight for kp in self.keypointdata]) > 0: #if we've found at least 1 keypoint, recalculate the virtual reference
             self.calculateReferencePoint()
-        if img.all() != None:
+        if img != None:
             self.drawPt(self.reference[0], self.reference[1], img)
         return (self.reference)
 
