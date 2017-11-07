@@ -642,7 +642,7 @@ def fitTransformation(OffsetsAndPixels):
 
 WINDOW_NAME = "preview"
 def main():
-    cv2.namedWindow(WINDOW_NAME) # open a window to show debugging images
+    cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_KEEPRATIO) # open a window to show debugging images
     vc = cv2.VideoCapture(0) # Initialize the default camera
     try:
         if vc.isOpened(): # try to get the first frame

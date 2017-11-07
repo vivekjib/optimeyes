@@ -14,7 +14,7 @@ from pygame.locals import *
 pygame.init()
 size = width, height = 1366, 768
 white = 255, 255, 255
-screen = pygame.display.set_mode(size)
+screen = pygame.display.set_mode(size, RESIZABLE)
 
 class Crosshair(object):
     def __init__(self, speed = [1, 1], quadratic = True):
